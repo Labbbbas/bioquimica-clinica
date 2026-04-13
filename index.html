@@ -1,0 +1,2692 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Árboles de Decisión · Bioquímica Clínica</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ===== CSS VARIABLES ===== */
+  :root {
+    --bg-deep:      #06090f;
+    --bg-card:      #0d1421;
+    --bg-panel:     #111827;
+    --border:       rgba(56,189,248,0.13);
+    --accent-cyan:  #38bdf8;
+    --accent-teal:  #0ea5e9;
+    --normal:       #22d3a5;
+    --normal-bg:    rgba(34,211,165,0.1);
+    --warn:         #f59e0b;
+    --warn-bg:      rgba(245,158,11,0.1);
+    --danger:       #f87171;
+    --danger-bg:    rgba(248,113,113,0.1);
+    --text-main:    #e2e8f0;
+    --text-muted:   #94a3b8;
+    --text-dim:     #475569;
+    --radius:       14px;
+    --radius-sm:    8px;
+    --shadow:       0 4px 32px rgba(0,0,0,0.5);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ===== LANDING ===== */
+  #landing {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg-deep);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  #landing.exit {
+    opacity: 0;
+    transform: scale(1.04);
+    pointer-events: none;
+  }
+  .landing-bg {
+    position: absolute; inset: 0;
+    background-image: url('');
+    background-size: cover;
+    background-position: center;
+    filter: blur(8px) brightness(0.18);
+    transform: scale(1.08);
+  }
+  .landing-overlay {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 40%, rgba(6,9,15,0.55) 0%, rgba(6,9,15,0.92) 70%);
+  }
+  .landing-content {
+    position: relative; z-index: 2;
+    text-align: center;
+    padding: 2rem;
+    max-width: 700px;
+    animation: fadeUp 1s ease both;
+  }
+  .landing-logo {
+    width: 220px;
+    margin-bottom: 2rem;
+    filter: drop-shadow(0 0 30px rgba(56,189,248,0.35));
+  }
+  .landing-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    line-height: 1.2;
+    color: #fff;
+    margin-bottom: 0.8rem;
+    letter-spacing: -0.02em;
+  }
+  .landing-subtitle {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+  }
+  .landing-divider {
+    width: 48px; height: 2px;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--normal));
+    margin: 1.5rem auto;
+    border-radius: 2px;
+  }
+  .landing-integrantes {
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    margin-bottom: 2.5rem;
+    line-height: 2;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .btn-start {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    background: linear-gradient(135deg, var(--accent-teal), var(--accent-cyan));
+    color: #000;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 0.9rem 2.5rem;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 40px rgba(56,189,248,0.35);
+    transition: transform 0.2s, box-shadow 0.2s;
+    letter-spacing: 0.03em;
+  }
+  .btn-start:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 0 60px rgba(56,189,248,0.5);
+  }
+  .btn-start svg { width:18px; height:18px; }
+
+  /* ===== APP SHELL ===== */
+  #app {
+    display: none;
+    min-height: 100vh;
+  }
+  #app.visible { display: flex; flex-direction: column; }
+
+  /* ===== HEADER ===== */
+  header {
+    background: rgba(13,20,33,0.96);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0.9rem 2rem;
+    display: flex; align-items: center; gap: 1.2rem;
+    position: sticky; top: 0; z-index: 50;
+  }
+  header img { height: 44px; }
+  .header-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem;
+    color: var(--text-main);
+    line-height: 1.2;
+  }
+  .header-title small {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .header-badge {
+    margin-left: auto;
+    font-size: 0.7rem;
+    background: var(--warn-bg);
+    color: var(--warn);
+    border: 1px solid rgba(245,158,11,0.25);
+    padding: 0.3rem 0.8rem;
+    border-radius: 50px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ===== LAYOUT ===== */
+  .layout {
+    display: flex;
+    flex: 1;
+    min-height: calc(100vh - 70px);
+  }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 0;
+    display: flex; flex-direction: column; gap: 0.3rem;
+  }
+  .sidebar-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    padding: 0 1.5rem;
+    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.7rem 1.5rem;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.18s;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    position: relative;
+  }
+  .nav-item:hover { background: rgba(56,189,248,0.05); color: var(--text-main); }
+  .nav-item.active {
+    background: rgba(56,189,248,0.08);
+    border-left-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    font-weight: 500;
+  }
+  .nav-icon {
+    width: 32px; height: 32px;
+    background: var(--bg-panel);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+  .nav-item.active .nav-icon { background: rgba(56,189,248,0.15); }
+
+  /* Module sub-items */
+  .sub-items {
+    padding-left: 1rem;
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .sub-items.open { max-height: 400px; }
+  .sub-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.45rem 1rem 0.45rem 1.5rem;
+    cursor: pointer;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    border-left: 2px solid var(--border);
+    transition: all 0.15s;
+  }
+  .sub-item:hover { color: var(--text-main); border-left-color: var(--accent-cyan); }
+  .sub-item.active { color: var(--accent-cyan); border-left-color: var(--accent-cyan); }
+  .sub-dot { width:6px; height:6px; border-radius:50%; background: currentColor; flex-shrink:0; }
+
+  /* ===== MAIN CONTENT ===== */
+  main {
+    flex: 1;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+  }
+
+  /* ===== MODULE INTRO ===== */
+  .module-intro {
+    width: 100%; max-width: 760px;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.4s ease both;
+  }
+  .module-intro h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.7rem;
+    margin-bottom: 0.4rem;
+    color: #fff;
+  }
+  .module-intro p {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* ===== PROGRESS BAR ===== */
+  .progress-bar-wrap {
+    width: 100%; max-width: 760px;
+    margin-bottom: 1.5rem;
+  }
+  .progress-bar-label {
+    display: flex; justify-content: space-between;
+    font-size: 0.75rem; color: var(--text-dim);
+    margin-bottom: 0.4rem;
+  }
+  .progress-bar-track {
+    height: 4px;
+    background: var(--bg-panel);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-teal), var(--accent-cyan));
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+
+  /* ===== PATH TRAIL ===== */
+  .path-trail {
+    width: 100%; max-width: 760px;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem;
+    margin-bottom: 1.2rem;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    min-height: 24px;
+  }
+  .path-crumb {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    padding: 0.2rem 0.6rem;
+    border-radius: 50px;
+    color: var(--text-dim);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .path-arrow { color: var(--text-dim); font-size: 0.7rem; }
+
+  /* ===== QUESTION CARD ===== */
+  .question-card {
+    width: 100%; max-width: 760px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem 2.5rem;
+    box-shadow: var(--shadow);
+    animation: fadeUp 0.35s ease both;
+  }
+  .question-section-tag {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent-cyan);
+    margin-bottom: 0.8rem;
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .question-section-tag::before {
+    content: '';
+    display: block; width: 20px; height: 1px;
+    background: var(--accent-cyan);
+  }
+  .question-text {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--text-main);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+  }
+  .question-ref {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-bottom: 1.8rem;
+    padding: 0.5rem 0.8rem;
+    background: var(--bg-panel);
+    border-radius: var(--radius-sm);
+    border-left: 2px solid var(--border);
+  }
+
+  /* ===== ANSWER BUTTONS ===== */
+  .answer-grid {
+    display: flex; flex-wrap: wrap; gap: 0.8rem;
+    margin-bottom: 1.5rem;
+  }
+  .answer-grid.multi { flex-direction: column; }
+  .btn-answer {
+    flex: 1; min-width: 120px;
+    padding: 0.85rem 1.4rem;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: var(--bg-panel);
+    color: var(--text-main);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: left;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .btn-answer:hover {
+    border-color: var(--accent-cyan);
+    background: rgba(56,189,248,0.07);
+    color: var(--accent-cyan);
+    transform: translateX(4px);
+  }
+  .btn-answer.yes { border-color: rgba(34,211,165,0.35); }
+  .btn-answer.yes:hover { border-color: var(--normal); background: var(--normal-bg); color: var(--normal); }
+  .btn-answer.no  { border-color: rgba(248,113,113,0.3); }
+  .btn-answer.no:hover  { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); }
+  .btn-indicator {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .btn-answer.yes .btn-indicator { background: var(--normal-bg); color: var(--normal); }
+  .btn-answer.no  .btn-indicator { background: var(--danger-bg); color: var(--danger); }
+  .btn-answer:not(.yes):not(.no) .btn-indicator {
+    background: rgba(56,189,248,0.1); color: var(--accent-cyan);
+  }
+
+  /* ===== NUMERIC INPUT ===== */
+  .numeric-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .numeric-input-field {
+    flex: 1;
+    min-width: 140px;
+    max-width: 220px;
+    padding: 0.75rem 1rem;
+    background: var(--bg-panel);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-main);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.18s;
+    text-align: center;
+  }
+  .numeric-input-field:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 3px rgba(56,189,248,0.12);
+  }
+  .numeric-input-field.error {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(248,113,113,0.15);
+  }
+  .numeric-unit-label {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 0.6rem 0.9rem;
+    background: var(--bg-panel);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .numeric-error-msg {
+    width: 100%;
+    font-size: 0.82rem;
+    color: var(--danger);
+    margin-top: -0.4rem;
+    margin-bottom: 0.5rem;
+    min-height: 1.1em;
+  }
+  .btn-confirm {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1.8rem;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--accent-cyan);
+    background: rgba(56,189,248,0.1);
+    color: var(--accent-cyan);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+    margin-bottom: 1.5rem;
+  }
+  .btn-confirm:hover {
+    background: rgba(56,189,248,0.2);
+    transform: translateX(3px);
+  }
+
+  /* ===== RESULT CARD ===== */
+  .result-card {
+    width: 100%; max-width: 760px;
+    border-radius: var(--radius);
+    padding: 1.8rem 2.5rem;
+    animation: fadeUp 0.35s ease both;
+    box-shadow: var(--shadow);
+  }
+  .result-card.normal {
+    background: var(--normal-bg);
+    border: 1.5px solid rgba(34,211,165,0.3);
+  }
+  .result-card.warning {
+    background: var(--warn-bg);
+    border: 1.5px solid rgba(245,158,11,0.3);
+  }
+  .result-card.danger {
+    background: var(--danger-bg);
+    border: 1.5px solid rgba(248,113,113,0.3);
+  }
+  .result-icon {
+    font-size: 2rem;
+    margin-bottom: 0.6rem;
+  }
+  .result-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    margin-bottom: 0.3rem;
+  }
+  .result-card.normal .result-title  { color: var(--normal); }
+  .result-card.warning .result-title { color: var(--warn); }
+  .result-card.danger .result-title  { color: var(--danger); }
+  .result-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    font-weight: 500;
+  }
+  .result-list {
+    list-style: none;
+    display: flex; flex-direction: column; gap: 0.4rem;
+    margin-bottom: 1.2rem;
+  }
+  .result-list li {
+    font-size: 0.88rem;
+    color: var(--text-main);
+    display: flex; align-items: flex-start; gap: 0.5rem;
+    line-height: 1.5;
+  }
+  .result-list li::before {
+    content: '→';
+    color: var(--text-dim);
+    flex-shrink: 0;
+    margin-top: 0.05rem;
+  }
+  .result-note {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    padding: 0.7rem 1rem;
+    background: rgba(0,0,0,0.2);
+    border-radius: var(--radius-sm);
+    line-height: 1.5;
+  }
+
+  /* ===== CONTROL BUTTONS ===== */
+  .controls {
+    width: 100%; max-width: 760px;
+    display: flex; gap: 0.8rem;
+    margin-top: 1.2rem;
+    flex-wrap: wrap;
+  }
+  .btn-ctrl {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.65rem 1.2rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .btn-ctrl:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(56,189,248,0.07); }
+  .btn-ctrl.primary {
+    background: rgba(56,189,248,0.12);
+    border-color: rgba(56,189,248,0.4);
+    color: var(--accent-cyan);
+  }
+  .btn-ctrl.primary:hover { background: rgba(56,189,248,0.2); }
+
+  /* ===== MODULE SELECT SCREEN ===== */
+  .module-grid {
+    width: 100%; max-width: 960px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.2rem;
+    animation: fadeUp 0.4s ease both;
+  }
+  .module-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .module-card::before {
+    content: '';
+    position: absolute; top:0; left:0; right:0; height:3px;
+    background: linear-gradient(90deg, var(--accent-teal), var(--accent-cyan));
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .module-card:hover { border-color: rgba(56,189,248,0.35); transform: translateY(-3px); box-shadow: 0 8px 40px rgba(0,0,0,0.4); }
+  .module-card:hover::before { opacity: 1; }
+  .module-card-icon { font-size: 2rem; margin-bottom: 1rem; }
+  .module-card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.15rem;
+    margin-bottom: 0.4rem;
+    color: var(--text-main);
+  }
+  .module-card-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+  }
+  .module-card-count {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .module-card-count span {
+    background: var(--bg-panel);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    color: var(--accent-cyan);
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    main { padding: 1.2rem; }
+    .question-card { padding: 1.4rem; }
+    .result-card { padding: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ======= LANDING ======= -->
+<div id="landing">
+  <div class="landing-bg" id="landingBg"></div>
+  <div class="landing-overlay"></div>
+  <div class="landing-content">
+    <img src="" alt="GenLab" class="landing-logo" id="headerLogoLanding">
+    <h1 class="landing-title">Laboratorio de Bioquímica Clínica</h1>
+    <div class="landing-divider"></div>
+    <p class="landing-subtitle">Árboles de decisión para interpretar resultados de laboratorio clínico</p>
+    <div class="landing-integrantes"></div>
+    <button class="btn-start" onclick="startApp()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 3l14 9-14 9V3z"/></svg>
+      Iniciar
+    </button>
+  </div>
+</div>
+
+<!-- ======= APP ======= -->
+<div id="app">
+  <header>
+    <img src="" alt="GenLab" id="headerLogoApp">
+    <div class="header-title">
+      Bioquímica Clínica
+      <small>Árboles de Decisión Clínicos</small>
+    </div>
+    <span class="header-badge">⚠ Uso académico</span>
+  </header>
+
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-label">Módulos</div>
+
+      <div class="nav-item active" id="nav-home" onclick="showHome()">
+        <div class="nav-icon">🏠</div> Inicio
+      </div>
+
+      <div class="nav-item" id="nav-ego" onclick="loadModule('ego')">
+        <div class="nav-icon">🔬</div> EGO
+      </div>
+      <div class="sub-items" id="sub-ego">
+        <div class="sub-item" onclick="loadTree('ego','exFisico')"><span class="sub-dot"></span>Examen Físico</div>
+        <div class="sub-item" onclick="loadTree('ego','exQuimico')"><span class="sub-dot"></span>Examen Químico</div>
+        <div class="sub-item" onclick="loadTree('ego','sedimento')"><span class="sub-dot"></span>Microscopía</div>
+      </div>
+
+      <div class="nav-item" id="nav-renal" onclick="loadModule('renal')">
+        <div class="nav-icon">🫀</div> Función Renal
+      </div>
+      <div class="sub-items" id="sub-renal">
+        <div class="sub-item" onclick="loadTree('renal','urea')"><span class="sub-dot"></span>Urea</div>
+        <div class="sub-item" onclick="loadTree('renal','creatinina')"><span class="sub-dot"></span>Creatinina</div>
+        <div class="sub-item" onclick="loadTree('renal','acidourico')"><span class="sub-dot"></span>Ácido Úrico</div>
+      </div>
+
+      <div class="nav-item" id="nav-lipidico" onclick="loadModule('lipidico')">
+        <div class="nav-icon">🧪</div> Perfil Lipídico
+      </div>
+      <div class="sub-items" id="sub-lipidico">
+        <div class="sub-item" onclick="loadTree('lipidico','glucosa')"><span class="sub-dot"></span>Glucosa</div>
+        <div class="sub-item" onclick="loadTree('lipidico','colesterol')"><span class="sub-dot"></span>Colesterol Total</div>
+        <div class="sub-item" onclick="loadTree('lipidico','trigliceridos')"><span class="sub-dot"></span>Triglicéridos</div>
+      </div>
+
+      <div class="nav-item" id="nav-electrolitos" onclick="loadModule('electrolitos')">
+        <div class="nav-icon">⚡</div> Electrolitos
+      </div>
+      <div class="sub-items" id="sub-electrolitos">
+        <div class="sub-item" onclick="loadTree('electrolitos','calcio')"><span class="sub-dot"></span>Calcio</div>
+        <div class="sub-item" onclick="loadTree('electrolitos','fosforo')"><span class="sub-dot"></span>Fósforo</div>
+        <div class="sub-item" onclick="loadTree('electrolitos','cloruros')"><span class="sub-dot"></span>Cloruros</div>
+        <div class="sub-item" onclick="loadTree('electrolitos','magnesio')"><span class="sub-dot"></span>Magnesio</div>
+        <div class="sub-item" onclick="loadTree('electrolitos','sodio')"><span class="sub-dot"></span>Sodio</div>
+        <div class="sub-item" onclick="loadTree('electrolitos','potasio')"><span class="sub-dot"></span>Potasio</div>
+      </div>
+
+      <div class="nav-item" id="nav-enzimas" onclick="loadModule('enzimas')">
+        <div class="nav-icon">🧬</div> Enzimas
+      </div>
+      <div class="sub-items" id="sub-enzimas">
+        <div class="sub-item" onclick="loadTree('enzimas','alt')"><span class="sub-dot"></span>ALT / GPT</div>
+        <div class="sub-item" onclick="loadTree('enzimas','ast')"><span class="sub-dot"></span>AST / GOT</div>
+        <div class="sub-item" onclick="loadTree('enzimas','alp')"><span class="sub-dot"></span>ALP</div>
+        <div class="sub-item" onclick="loadTree('enzimas','ggt')"><span class="sub-dot"></span>Gamma-GT</div>
+        <div class="sub-item" onclick="loadTree('enzimas','ldh')"><span class="sub-dot"></span>LDH</div>
+        <div class="sub-item" onclick="loadTree('enzimas','ck')"><span class="sub-dot"></span>CK Total</div>
+      </div>
+
+      <div class="nav-item" id="nav-proteinas" onclick="loadModule('proteinas')">
+        <div class="nav-icon">🥩</div> Proteínas
+      </div>
+      <div class="sub-items" id="sub-proteinas">
+        <div class="sub-item" onclick="loadTree('proteinas','albumina')"><span class="sub-dot"></span>Albúmina (ALB)</div>
+        <div class="sub-item" onclick="loadTree('proteinas','totales')"><span class="sub-dot"></span>Proteínas Totales</div>
+      </div>
+    </nav>
+
+    <!-- MAIN -->
+    <main id="mainContent"></main>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DATA: ALL DECISION TREES
+   Structure: { id, label, section, nodes: { id: {type:'q'|'r', ...} } }
+   type 'q' => question node:  { text, ref?, answers: [{label, icon, next}] }
+   type 'r' => result node:    { status:'normal'|'warning'|'danger', title, subtitle, items:[], note? }
+   ============================================================ */
+const TREES = {
+
+  /* ===== EGO: EXAMEN FÍSICO ===== */
+  ego_exFisico: {
+    label: 'EGO – Examen Físico',
+    section: 'Examen General de Orina',
+    start: 'olor',
+    nodes: {
+      olor: {
+        type:'q', text:'¿Tiene la orina olor normal (no fétido, no amoniacal, no dulce)?',
+        ref:'Evaluar apariencia – Olor',
+        answers:[
+          {label:'Sí – olor normal', icon:'✓', next:'color'},
+          {label:'No – olor alterado', icon:'✗', next:'r_olor'}
+        ]
+      },
+      r_olor: {
+        type:'r', status:'danger', title:'Olor alterado',
+        subtitle:'Hallazgo anormal en examen físico de orina',
+        items:[
+          'Olor fétido: indica posible muestra vieja o infección urinaria',
+          'Olor a amoniaco: sugiere infección bacteriana por degradadores de urea',
+          'Olor dulce: indicativo de glucosuria'
+        ],
+        note:'Correlacionar con examen químico y sedimento.'
+      },
+      color: {
+        type:'q', text:'¿El color es amarillento (dentro del rango normal)?',
+        ref:'Evaluar apariencia – Color',
+        answers:[
+          {label:'Sí – amarillento normal', icon:'✓', next:'turbidez'},
+          {label:'No – color anormal', icon:'✗', next:'r_color'}
+        ]
+      },
+      r_color: {
+        type:'r', status:'warning', title:'Color anormal',
+        subtitle:'Posible alteración de la coloración urinaria',
+        items:[
+          'Rojo: posible hematuria',
+          'Marrón rojizo: sugiere glomerulonefritis'
+        ],
+        note:'Continuar con gravedad específica para mayor orientación diagnóstica.'
+      },
+      turbidez: {
+        type:'q', text:'¿Se observa turbidez en la orina?',
+        ref:'Evaluar apariencia – Turbidez',
+        answers:[
+          {label:'No – orina clara', icon:'✓', next:'gravedadEsp'},
+          {label:'Sí – orina turbia', icon:'✗', next:'r_turbidez'}
+        ]
+      },
+      r_turbidez: {
+        type:'r', status:'warning', title:'Turbidez presente',
+        subtitle:'Posibles causas de turbidez',
+        items:[
+          'Cristales: posible litiasis renal o desbalance metabólico',
+          'Bacterias: indica infección del tracto urinario',
+          'Células epiteliales o leucocitos: posible inflamación o infección'
+        ],
+        note:'Evaluar examen microscópico del sedimento.'
+      },
+      gravedadEsp: {
+        type:'n', text:'¿Cuál es la gravedad específica de la orina?',
+        ref:'Rango normal adulto: 1.003 – 1.035 g/mL',
+        unit:'g/mL', min:1.000, max:1.060, step:0.001, decimals:3,
+        ranges:[
+          {lo:1.003, hi:1.035, next:'osmolaridad'},
+          {lo:-Infinity, hi:1.003, next:'r_gravBaja'},
+          {lo:1.035, hi:Infinity, next:'r_gravAlta'}
+        ]
+      },
+      r_gravAlta: {
+        type:'r', status:'warning', title:'Gravedad específica ALTA (> 1.035 g/mL)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Deshidratación',
+          'Glucosuria (diabetes)',
+          'Proteinuria (síndrome nefrótico)'
+        ]
+      },
+      r_gravBaja: {
+        type:'r', status:'warning', title:'Gravedad específica BAJA (< 1.003 g/mL)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Insuficiencia renal',
+          'Uso de diuréticos',
+          'Diabetes insípida'
+        ]
+      },
+      osmolaridad: {
+        type:'n', text:'¿Cuál es la osmolaridad urinaria?',
+        ref:'Rango funcional: 50 – 1200 mOsm/kg',
+        unit:'mOsm/kg', min:0, max:2000, step:1, decimals:0,
+        ranges:[
+          {lo:50, hi:1200, next:'r_fisicoNormal'},
+          {lo:-Infinity, hi:50, next:'r_osmBaja'},
+          {lo:1200, hi:Infinity, next:'r_osmAlta'}
+        ]
+      },
+      r_osmAlta: {
+        type:'r', status:'warning', title:'Osmolaridad ALTA (> 1200 mOsm/Kg)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Deshidratación',
+          'SIADH (Síndrome de secreción inadecuada de ADH)'
+        ]
+      },
+      r_osmBaja: {
+        type:'r', status:'warning', title:'Osmolaridad BAJA (< 50 mOsm/Kg)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Insuficiencia renal',
+          'Polidipsia primaria',
+          'Diabetes insípida'
+        ]
+      },
+      r_fisicoNormal: {
+        type:'r', status:'normal', title:'Examen físico normal',
+        subtitle:'Resultados dentro de parámetros esperados',
+        items:[
+          'Olor, color, turbidez, gravedad específica y osmolaridad normales',
+          'Función renal adecuada en parámetros físicos'
+        ],
+        note:'Continuar con examen químico para evaluación completa del EGO.'
+      }
+    }
+  },
+
+  /* ===== EGO: EXAMEN QUÍMICO ===== */
+  ego_exQuimico: {
+    label: 'EGO – Examen Químico',
+    section: 'Examen General de Orina',
+    start: 'ph',
+    nodes: {
+      ph: {
+        type:'n', text:'¿Cuál es el pH urinario?',
+        ref:'Rango normal: 4.5 – 8.0',
+        unit:'pH', min:1, max:14, step:0.1, decimals:1,
+        ranges:[
+          {lo:4.5, hi:8.0, next:'proteinas'},
+          {lo:-Infinity, hi:4.5, next:'r_phBajo'},
+          {lo:8.0, hi:Infinity, next:'r_phAlto'}
+        ]
+      },
+      r_phAlto: {
+        type:'r', status:'warning', title:'pH ALTO (> 8.0) – Orina alcalina',
+        subtitle:'Sospecha de:',
+        items:[
+          'Alcalosis metabólica o respiratoria',
+          'Infección bacteriana productora de ureasa'
+        ]
+      },
+      r_phBajo: {
+        type:'r', status:'warning', title:'pH BAJO (< 4.5) – Orina muy ácida',
+        subtitle:'Sospecha de:',
+        items:[
+          'Acidosis metabólica o respiratoria',
+          'Cetoacidosis diabética'
+        ]
+      },
+      proteinas: {
+        type:'q', text:'¿Hay presencia de proteínas en orina?',
+        ref:'Proteínas urinarias – examen químico',
+        answers:[
+          {label:'No – función renal normal', icon:'✓', next:'glucosa'},
+          {label:'Sí – proteinuria detectada', icon:'✗', next:'r_proteinas'}
+        ]
+      },
+      r_proteinas: {
+        type:'r', status:'danger', title:'Proteinuria detectada',
+        subtitle:'Sospecha de:',
+        items:[
+          'Nefropatía diabética',
+          'Glomerulonefritis',
+          'Hipertensión arterial',
+          'Insuficiencia cardíaca congestiva'
+        ]
+      },
+      glucosa: {
+        type:'q', text:'¿Hay presencia de glucosa en orina?',
+        ref:'Glucosa urinaria – examen químico',
+        answers:[
+          {label:'No – función renal normal', icon:'✓', next:'cetonas'},
+          {label:'Sí – glucosuria detectada', icon:'✗', next:'r_glucosa'}
+        ]
+      },
+      r_glucosa: {
+        type:'r', status:'danger', title:'Glucosuria detectada',
+        subtitle:'Sospecha de:',
+        items:[
+          'Diabetes mellitus',
+          'Enfermedad renal tubular',
+          'Hiperglucemia transitoria'
+        ]
+      },
+      cetonas: {
+        type:'q', text:'¿Hay presencia de cetonas en orina?',
+        ref:'Cetonas – examen químico',
+        answers:[
+          {label:'No – función renal normal', icon:'✓', next:'sangre'},
+          {label:'Sí – cetonuria detectada', icon:'✗', next:'r_cetonas'}
+        ]
+      },
+      r_cetonas: {
+        type:'r', status:'danger', title:'Cetonuria detectada',
+        subtitle:'Sospecha de:',
+        items:[
+          'Cetoacidosis diabética',
+          'Ayuno prolongado',
+          'Dieta cetogénica',
+          'Vómitos severos',
+          'Ejercicio excesivo'
+        ]
+      },
+      sangre: {
+        type:'q', text:'¿Hay presencia de sangre en orina?',
+        ref:'Sangre – examen químico',
+        answers:[
+          {label:'No – función renal normal', icon:'✓', next:'bilirrubina'},
+          {label:'Sí – hematuria detectada', icon:'✗', next:'r_sangre'}
+        ]
+      },
+      r_sangre: {
+        type:'r', status:'danger', title:'Sangre en orina detectada',
+        subtitle:'Sospecha de:',
+        items:[
+          'Hematuria',
+          'Hemoglobinuria',
+          'Mioglobinuria',
+          'Enfermedad glomerular'
+        ]
+      },
+      bilirrubina: {
+        type:'q', text:'¿Hay presencia de bilirrubina en orina?',
+        ref:'Bilirrubina – examen químico',
+        answers:[
+          {label:'No – función renal normal', icon:'✓', next:'urobilinogeno'},
+          {label:'Sí – bilirrubinuria detectada', icon:'✗', next:'r_bilirrubina'}
+        ]
+      },
+      r_bilirrubina: {
+        type:'r', status:'danger', title:'Bilirrubinuria detectada',
+        subtitle:'Sospecha de:',
+        items:[
+          'Enfermedad hepática (hepatitis, cirrosis)',
+          'Obstrucción biliar'
+        ]
+      },
+      urobilinogeno: {
+        type:'q', text:'¿Los niveles de urobilinógeno son normales o levemente elevados?',
+        ref:'Urobilinógeno – examen químico',
+        answers:[
+          {label:'Sí – normal/leve (habitual)', icon:'✓', next:'nitritos'},
+          {label:'No – niveles alterados', icon:'✗', next:'urobilinogenoDetalle'}
+        ]
+      },
+      urobilinogenoDetalle: {
+        type:'q', text:'¿El urobilinógeno está elevado o bajo/ausente?',
+        ref:'Evaluar urobilinógeno',
+        answers:[
+          {label:'Elevado', icon:'▲', next:'r_urobiElevado'},
+          {label:'Bajo o ausente', icon:'▼', next:'r_urobiBajo'}
+        ]
+      },
+      r_urobiElevado: {
+        type:'r', status:'warning', title:'Urobilinógeno ELEVADO',
+        subtitle:'Sospecha de:',
+        items:[
+          'Anemia hemolítica',
+          'Enfermedad hepática'
+        ]
+      },
+      r_urobiBajo: {
+        type:'r', status:'warning', title:'Urobilinógeno BAJO o AUSENTE',
+        subtitle:'Sospecha de:',
+        items:[
+          'Obstrucción biliar'
+        ]
+      },
+      nitritos: {
+        type:'q', text:'¿Hay presencia de nitritos en orina?',
+        ref:'Nitritos – examen químico',
+        answers:[
+          {label:'No – nitritos negativos', icon:'✓', next:'esterasa'},
+          {label:'Sí – nitritos positivos', icon:'✗', next:'r_nitritos'}
+        ]
+      },
+      r_nitritos: {
+        type:'r', status:'danger', title:'Nitritos positivos',
+        subtitle:'Sospecha de:',
+        items:[
+          'Infección urinaria por bacterias reductoras de nitrato'
+        ],
+        note:'Confirmar con urocultivo.'
+      },
+      esterasa: {
+        type:'q', text:'¿Hay presencia de esterasa leucocitaria en orina?',
+        ref:'Esterasa leucocitaria – examen químico',
+        answers:[
+          {label:'No – menos probable infección', icon:'✓', next:'r_quimicoNormal'},
+          {label:'Sí – esterasa positiva', icon:'✗', next:'r_esterasa'}
+        ]
+      },
+      r_esterasa: {
+        type:'r', status:'warning', title:'Esterasa leucocitaria positiva',
+        subtitle:'Sospecha de:',
+        items:[
+          'Infección o inflamación del tracto urinario',
+          'Buscar leucocitos en sedimento urinario'
+        ],
+        note:'Los nitritos negativos no excluyen IVU. Evaluar sedimento microscópico.'
+      },
+      r_quimicoNormal: {
+        type:'r', status:'normal', title:'Examen químico sin alteraciones significativas',
+        subtitle:'Parámetros evaluados dentro del rango esperado',
+        items:[
+          'pH, proteínas, glucosa, cetonas, sangre, bilirrubina, urobilinógeno, nitritos y esterasa normales'
+        ],
+        note:'Continuar con microscopía del sedimento para evaluación completa.'
+      }
+    }
+  },
+
+  /* ===== EGO: MICROSCOPÍA ===== */
+  ego_sedimento: {
+    label: 'EGO – Microscopía del Sedimento',
+    section: 'Examen General de Orina',
+    start: 'leucocitos',
+    nodes: {
+      leucocitos: {
+        type:'q', text:'¿Hay presencia de leucocitos en sedimento urinario?',
+        ref:'Leucocitos – microscopía sedimento (normal: 0–5/HPF)',
+        answers:[
+          {label:'No – 0–5/HPF (habitual)', icon:'✓', next:'eritrocitos'},
+          {label:'Sí – > 5/HPF (piuria)', icon:'✗', next:'r_leucocitos'}
+        ]
+      },
+      r_leucocitos: {
+        type:'r', status:'danger', title:'Leucocituria (> 5/HPF) – Piuria',
+        subtitle:'Indica inflamación o infección del tracto urinario',
+        items:[
+          'Posible infección urinaria',
+          'Evaluar en conjunto con nitritos y esterasa leucocitaria'
+        ]
+      },
+      eritrocitos: {
+        type:'q', text:'¿Hay presencia de eritrocitos en sedimento urinario?',
+        ref:'Eritrocitos – microscopía (normal: 0–2/HPF)',
+        answers:[
+          {label:'No – 0–2/HPF (habitual)', icon:'✓', next:'bacterias'},
+          {label:'Sí – ≥ 3/HPF (hematuria microscópica)', icon:'✗', next:'r_eritrocitos'}
+        ]
+      },
+      r_eritrocitos: {
+        type:'r', status:'danger', title:'Hematuria microscópica (≥ 3/HPF)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Hematuria microscópica de origen glomerular o urinario',
+          'Correlacionar con resultado de sangre en examen químico'
+        ]
+      },
+      bacterias: {
+        type:'q', text:'¿Se observan bacterias en el sedimento?',
+        ref:'Bacterias – microscopía sedimento',
+        answers:[
+          {label:'No – orina normal', icon:'✓', next:'epiteliales'},
+          {label:'Sí – bacteriuria presente', icon:'✗', next:'r_bacterias'}
+        ]
+      },
+      r_bacterias: {
+        type:'r', status:'danger', title:'Bacteriuria presente',
+        subtitle:'Sospecha de:',
+        items:[
+          'Infección de vías urinarias (IVU)',
+          'Solicitar urocultivo para confirmación'
+        ]
+      },
+      epiteliales: {
+        type:'q', text:'¿Se observan células epiteliales escamosas en el sedimento?',
+        ref:'Células epiteliales escamosas – microscopía',
+        answers:[
+          {label:'No – orina normal', icon:'✓', next:'cilindros'},
+          {label:'Sí – células presentes', icon:'✗', next:'r_epiteliales'}
+        ]
+      },
+      r_epiteliales: {
+        type:'r', status:'warning', title:'Células epiteliales escamosas presentes',
+        subtitle:'Interpretación:',
+        items:[
+          'Muchas células → probable contaminación de la muestra',
+          'Considerar repetir toma de muestra con técnica correcta'
+        ]
+      },
+      cilindros: {
+        type:'q', text:'¿Se observan cilindros en el sedimento?',
+        ref:'Cilindros – microscopía sedimento',
+        answers:[
+          {label:'No – orina normal', icon:'✓', next:'cristales'},
+          {label:'Sí – cilindros presentes', icon:'✗', next:'r_cilindros'}
+        ]
+      },
+      r_cilindros: {
+        type:'r', status:'danger', title:'Cilindros presentes',
+        subtitle:'Interpretación según tipo:',
+        items:[
+          'Hialinos escasos → pueden verse en deshidratación/ejercicio (menor gravedad)',
+          'Eritrocitarios → sugieren origen glomerular',
+          'Leucocitarios → sugieren inflamación renal'
+        ]
+      },
+      cristales: {
+        type:'q', text:'¿Se observan cristales en el sedimento?',
+        ref:'Cristales – microscopía sedimento',
+        answers:[
+          {label:'No – orina normal', icon:'✓', next:'r_sedimentoNormal'},
+          {label:'Sí – cristales presentes', icon:'✗', next:'r_cristales'}
+        ]
+      },
+      r_cristales: {
+        type:'r', status:'warning', title:'Cristales presentes',
+        subtitle:'Interpretación:',
+        items:[
+          'Pueden aparecer por pH o concentración urinaria',
+          'Si son abundantes o específicos → correlacionar con litiasis renal o desórdenes metabólicos'
+        ]
+      },
+      r_sedimentoNormal: {
+        type:'r', status:'normal', title:'Microscopía del sedimento sin alteraciones',
+        subtitle:'Todos los parámetros dentro del rango normal',
+        items:[
+          'Leucocitos, eritrocitos, bacterias, células epiteliales, cilindros y cristales normales'
+        ],
+        note:'Diagnóstico preliminar basado en los resultados de todas las evaluaciones del EGO.'
+      }
+    }
+  },
+
+  /* ===== FUNCIÓN RENAL: UREA ===== */
+  renal_urea: {
+    label: 'Función Renal – Urea',
+    section: 'Evaluación de Función Renal',
+    start: 'urea',
+    nodes: {
+      urea: {
+        type:'n', text:'¿Cuál es el valor de urea sérica?',
+        ref:'Rango normal adulto: 7 – 20 mg/dL',
+        unit:'mg/dL', min:0, max:300, step:0.1, decimals:1,
+        ranges:[
+          {lo:7, hi:20, next:'r_urea_normal'},
+          {lo:-Infinity, hi:7, next:'r_urea_baja'},
+          {lo:20, hi:Infinity, next:'r_urea_alta'}
+        ]
+      },
+      r_urea_normal: {
+        type:'r', status:'normal', title:'Urea – Dentro del rango normal',
+        subtitle:'Función intestinal, renal y muscular normal',
+        items:['Urea sérica: 7 – 20 mg/dL']
+      },
+      r_urea_alta: {
+        type:'r', status:'danger', title:'Urea ELEVADA (> 20 mg/dL)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Insuficiencia renal',
+          'Choque o enfermedades crónicas del hígado',
+          'Patologías renales crónicas u obstrucción postrenal',
+          'Dietas altas en proteínas, deshidratación o desgaste muscular'
+        ]
+      },
+      r_urea_baja: {
+        type:'r', status:'warning', title:'Urea BAJA (< 7 mg/dL)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Enfermedad hepática',
+          'Cirrosis',
+          'Síndrome de secreción inadecuada de hormona antidiurética (SIADH)'
+        ]
+      }
+    }
+  },
+
+  /* ===== FUNCIÓN RENAL: CREATININA ===== */
+  renal_creatinina: {
+    label: 'Función Renal – Creatinina',
+    section: 'Evaluación de Función Renal',
+    start: 'creat_sexo',
+    nodes: {
+      creat_sexo: {
+        type:'q', text:'¿Cuál es el sexo biológico del paciente?',
+        ref:'Los rangos de referencia difieren entre hombres y mujeres',
+        answers:[
+          {label:'Hombre', icon:'♂', next:'creat_h'},
+          {label:'Mujer', icon:'♀', next:'creat_m'}
+        ]
+      },
+      creat_h: {
+        type:'n', text:'¿Cuál es el valor de creatinina sérica?',
+        ref:'Hombres: 0.7 – 1.3 mg/dL',
+        unit:'mg/dL', min:0, max:20, step:0.01, decimals:2,
+        ranges:[
+          {lo:0.7, hi:1.3, next:'r_creat_normal'},
+          {lo:-Infinity, hi:0.7, next:'r_creat_baja'},
+          {lo:1.3, hi:Infinity, next:'r_creat_alta'}
+        ]
+      },
+      creat_m: {
+        type:'n', text:'¿Cuál es el valor de creatinina sérica?',
+        ref:'Mujeres: 0.5 – 1.2 mg/dL',
+        unit:'mg/dL', min:0, max:20, step:0.01, decimals:2,
+        ranges:[
+          {lo:0.5, hi:1.2, next:'r_creat_normal'},
+          {lo:-Infinity, hi:0.5, next:'r_creat_baja'},
+          {lo:1.2, hi:Infinity, next:'r_creat_alta'}
+        ]
+      },
+      r_creat_normal: {
+        type:'r', status:'normal', title:'Creatinina – Dentro del rango normal',
+        subtitle:'Filtración glomerular adecuada – sin alteración significativa de función renal',
+        items:[
+          'Hombres: 0.7–1.3 mg/dL',
+          'Mujeres: 0.5–1.2 mg/dL'
+        ]
+      },
+      r_creat_alta: {
+        type:'r', status:'danger', title:'Creatinina ELEVADA',
+        subtitle:'Sospecha de:',
+        items:[
+          'Disminución en la filtración glomerular',
+          'Necrosis muscular',
+          'Insuficiencia renal'
+        ]
+      },
+      r_creat_baja: {
+        type:'r', status:'warning', title:'Creatinina BAJA',
+        subtitle:'Sospecha de:',
+        items:[
+          'Baja masa muscular',
+          'Desnutrición',
+          'Enfermedades metabólicas',
+          'Embarazo'
+        ]
+      }
+    }
+  },
+
+  /* ===== FUNCIÓN RENAL: ÁCIDO ÚRICO ===== */
+  renal_acidourico: {
+    label: 'Función Renal – Ácido Úrico',
+    section: 'Evaluación de Función Renal',
+    start: 'au_sexo',
+    nodes: {
+      au_sexo: {
+        type:'q', text:'¿Cuál es el sexo biológico del paciente?',
+        ref:'Los rangos de referencia difieren entre hombres y mujeres',
+        answers:[
+          {label:'Hombre', icon:'♂', next:'au_h'},
+          {label:'Mujer', icon:'♀', next:'au_m'}
+        ]
+      },
+      au_h: {
+        type:'n', text:'¿Cuál es el valor de ácido úrico sérico?',
+        ref:'Hombres: 3.4 – 7.0 mg/dL',
+        unit:'mg/dL', min:0, max:30, step:0.1, decimals:1,
+        ranges:[
+          {lo:3.4, hi:7.0, next:'r_au_normal'},
+          {lo:-Infinity, hi:3.4, next:'r_au_baja'},
+          {lo:7.0, hi:Infinity, next:'r_au_alta'}
+        ]
+      },
+      au_m: {
+        type:'n', text:'¿Cuál es el valor de ácido úrico sérico?',
+        ref:'Mujeres: 2.4 – 6.0 mg/dL',
+        unit:'mg/dL', min:0, max:30, step:0.1, decimals:1,
+        ranges:[
+          {lo:2.4, hi:6.0, next:'r_au_normal'},
+          {lo:-Infinity, hi:2.4, next:'r_au_baja'},
+          {lo:6.0, hi:Infinity, next:'r_au_alta'}
+        ]
+      },
+      r_au_normal: {
+        type:'r', status:'normal', title:'Ácido Úrico – Dentro del rango normal',
+        subtitle:'Eliminación global adecuada de ácido úrico',
+        items:[
+          'Hombres: 3.4–7.0 mg/dL',
+          'Mujeres: 2.4–6.0 mg/dL'
+        ]
+      },
+      r_au_alta: {
+        type:'r', status:'danger', title:'Ácido Úrico ELEVADO (hiperuricemia)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Aumento en la síntesis de purinas',
+          'Desórdenes metabólicos (Síndrome Lesch-Nyhan)',
+          'Problemas nutricionales',
+          'Aumento del recambio de ácidos nucleicos (leucemia, psoriasis, fármacos citotóxicos)',
+          'Fallo renal'
+        ]
+      },
+      r_au_baja: {
+        type:'r', status:'warning', title:'Ácido Úrico BAJO (hipouricemia)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Fallo en la eliminación renal del ácido úrico (Síndrome de Fanconi)',
+          'Enfermedad de Hodgkin'
+        ]
+      }
+    }
+  },
+
+  /* ===== PERFIL LIPÍDICO: GLUCOSA ===== */
+  lipidico_glucosa: {
+    label: 'Perfil Lipídico – Glucosa',
+    section: 'Determinación de Glucosa y Perfil Lipídico',
+    start: 'gl',
+    nodes: {
+      gl: {
+        type:'n', text:'¿Cuál es el valor de glucosa sérica/plasmática?',
+        ref:'Normal (suero/plasma): 80 – 100 mg/dL',
+        unit:'mg/dL', min:0, max:800, step:1, decimals:0,
+        ranges:[
+          {lo:80, hi:100, next:'r_gl_normal'},
+          {lo:-Infinity, hi:80, next:'r_gl_baja'},
+          {lo:100, hi:Infinity, next:'r_gl_alta'}
+        ]
+      },
+      r_gl_normal: {
+        type:'r', status:'normal', title:'Glucosa – Dentro del rango normal',
+        subtitle:'Función pancreática y endocrina normal',
+        items:['Glucosa sérica/plasmática: 80 – 100 mg/dL']
+      },
+      r_gl_alta: {
+        type:'r', status:'danger', title:'Glucosa ELEVADA (hiperglucemia)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Diabetes Mellitus tipo I y II'
+        ]
+      },
+      r_gl_baja: {
+        type:'r', status:'warning', title:'Glucosa BAJA (hipoglucemia)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Insuficiencia suprarrenal'
+        ]
+      }
+    }
+  },
+
+  /* ===== PERFIL LIPÍDICO: COLESTEROL TOTAL ===== */
+  lipidico_colesterol: {
+    label: 'Perfil Lipídico – Colesterol Total',
+    section: 'Determinación de Glucosa y Perfil Lipídico',
+    start: 'col',
+    nodes: {
+      col: {
+        type:'n', text:'¿Cuál es el valor de colesterol total?',
+        ref:'Normal: < 200 mg/dL · Moderado: 200–239 mg/dL · Alto: ≥ 240 mg/dL',
+        unit:'mg/dL', min:0, max:600, step:1, decimals:0,
+        ranges:[
+          {lo:-Infinity, hi:120, next:'r_col_baja'},
+          {lo:120, hi:199, next:'r_col_normal'},
+          {lo:200, hi:239, next:'r_col_moderado'},
+          {lo:240, hi:Infinity, next:'r_col_alta'}
+        ]
+      },
+      r_col_normal: {
+        type:'r', status:'normal', title:'Colesterol Total – Normal (< 200 mg/dL)',
+        subtitle:'Metabolismo y transporte de lípidos en el organismo adecuados.',
+        items:['Continuar monitoreo periódico.']
+      },
+      r_col_moderado: {
+        type:'r', status:'warning', title:'Colesterol Total MODERADO (200–239 mg/dL)',
+        subtitle:'Riesgo cardiovascular limítrofe. Considerar:',
+        items:[
+          'Evaluación de otros factores de riesgo cardiovascular',
+          'Cambios en dieta y estilo de vida',
+          'Seguimiento a corto plazo'
+        ]
+      },
+      r_col_alta: {
+        type:'r', status:'danger', title:'Colesterol Total ELEVADO (≥ 240 mg/dL)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Hipercolesterolemia',
+          'Riesgo de accidente vascular',
+          'Aparición de aterosclerosis'
+        ]
+      },
+      r_col_baja: {
+        type:'r', status:'warning', title:'Colesterol Total BAJO (< 120 mg/dL)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Dietas muy bajas en grasas',
+          'Problemas hepáticos',
+          'Hipertiroidismo'
+        ]
+      }
+    }
+  },
+
+  /* ===== PERFIL LIPÍDICO: TRIGLICÉRIDOS ===== */
+  lipidico_trigliceridos: {
+    label: 'Perfil Lipídico – Triglicéridos',
+    section: 'Determinación de Glucosa y Perfil Lipídico',
+    start: 'tg',
+    nodes: {
+      tg: {
+        type:'n', text:'¿Cuál es el valor de triglicéridos?',
+        ref:'Normal: < 150 mg/dL (suero/plasma adultos)',
+        unit:'mg/dL', min:0, max:2000, step:1, decimals:0,
+        ranges:[
+          {lo:40, hi:150, next:'r_tg_normal'},
+          {lo:150, hi:Infinity, next:'r_tg_alta'},
+          {lo:-Infinity, hi:40, next:'r_tg_baja'}
+        ]
+      },
+      r_tg_normal: {
+        type:'r', status:'normal', title:'Triglicéridos – Dentro del rango normal',
+        subtitle:'Metabolismo lipídico normal.',
+        items:['Triglicéridos: < 150 mg/dL']
+      },
+      r_tg_alta: {
+        type:'r', status:'danger', title:'Triglicéridos ELEVADOS (> 200 mg/dL)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Riesgo de enfermedad cardiaca',
+          'Desórdenes del metabolismo lipídico (hiperlipoproteinemias)',
+          'Deficiencia de la actividad de la lipasa',
+          'Deficiencia de apolipoproteína C-II',
+          'Diabetes, desórdenes renales o endocrinos'
+        ]
+      },
+      r_tg_baja: {
+        type:'r', status:'warning', title:'Triglicéridos BAJOS (< 40 mg/dL)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Hipertiroidismo',
+          'Enfermedad celíaca',
+          'Malabsorción intestinal',
+          'Desnutrición',
+          'Enfermedad hepática avanzada'
+        ]
+      }
+    }
+  },
+
+  /* ===== ELECTROLITOS: CALCIO ===== */
+  electrolitos_calcio: {
+    label: 'Electrolitos – Calcio',
+    section: 'Evaluación de Minerales y Electrolitos',
+    start: 'ca_unidad',
+    nodes: {
+      ca_unidad: {
+        type:'q', text:'¿En qué unidad desea ingresar el valor de calcio sérico?',
+        ref:'Normal: 8.6–10.3 mg/dL · equivalente a 2.15–2.50 mmol/L',
+        answers:[
+          {label:'mg/dL', icon:'🧪', next:'ca_mgdl'},
+          {label:'mmol/L', icon:'⚗️', next:'ca_mmol'}
+        ]
+      },
+      ca_mgdl: {
+        type:'n', text:'¿Cuál es el valor de calcio sérico?',
+        ref:'Normal: 8.6 – 10.3 mg/dL',
+        unit:'mg/dL', min:0, max:30, step:0.1, decimals:1,
+        ranges:[
+          {lo:8.6, hi:10.3, next:'r_ca_normal'},
+          {lo:-Infinity, hi:8.6, next:'r_ca_baja'},
+          {lo:10.3, hi:Infinity, next:'r_ca_alta'}
+        ]
+      },
+      ca_mmol: {
+        type:'n', text:'¿Cuál es el valor de calcio sérico?',
+        ref:'Normal: 2.15 – 2.50 mmol/L',
+        unit:'mmol/L', min:0, max:8, step:0.01, decimals:2,
+        ranges:[
+          {lo:2.15, hi:2.50, next:'r_ca_normal'},
+          {lo:-Infinity, hi:2.15, next:'r_ca_baja'},
+          {lo:2.50, hi:Infinity, next:'r_ca_alta'}
+        ]
+      },
+      r_ca_normal: {
+        type:'r', status:'normal', title:'Calcio – Dentro del rango normal',
+        subtitle:'Homeostasis del calcio equilibrada.',
+        items:['Normal: 8.6–10.3 mg/dL o 2.15–2.50 mmol/L']
+      },
+      r_ca_alta: {
+        type:'r', status:'danger', title:'Calcio ELEVADO – Hipercalcemia (> 10.3 mg/dL o > 2.50 mmol/L)',
+        subtitle:'Sospecha de (suero):',
+        items:[
+          'Tubulopatías renales (orina)',
+          'Hipercalcemia',
+          'Hiperparatiroidismo',
+          'Tumores',
+          'Metástasis en hueso',
+          'Sobredosis de vitamina D'
+        ],
+        note:'En orina: tubulopatías renales asociadas.'
+      },
+      r_ca_baja: {
+        type:'r', status:'danger', title:'Calcio BAJO – Hipocalcemia (< 8.6 mg/dL o < 2.15 mmol/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Hipoparatiroidismo',
+          'Deficiencia de vitamina D',
+          'Enfermedad renal crónica',
+          'Pancreatitis'
+        ]
+      }
+    }
+  },
+
+  /* ===== ELECTROLITOS: FÓSFORO ===== */
+  electrolitos_fosforo: {
+    label: 'Electrolitos – Fósforo',
+    section: 'Evaluación de Minerales y Electrolitos',
+    start: 'p',
+    nodes: {
+      p: {
+        type:'n', text:'¿Cuál es el valor de fósforo sérico?',
+        ref:'Normal: 2.5 – 4.5 mg/dL',
+        unit:'mg/dL', min:0, max:20, step:0.1, decimals:1,
+        ranges:[
+          {lo:2.5, hi:4.5, next:'r_p_normal'},
+          {lo:-Infinity, hi:2.5, next:'r_p_baja'},
+          {lo:4.5, hi:Infinity, next:'r_p_alta'}
+        ]
+      },
+      r_p_normal: {
+        type:'r', status:'normal', title:'Fósforo – Dentro del rango normal',
+        subtitle:'Función renal normal y función normal de tiroides.',
+        items:['Fósforo sérico: 2.5 – 4.5 mg/dL']
+      },
+      r_p_alta: {
+        type:'r', status:'danger', title:'Fósforo ELEVADO – Hiperfosfatemia (> 4.5 mg/dL)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Intoxicación por vitamina D',
+          'Hipoparatiroidismo',
+          'Fallo renal'
+        ]
+      },
+      r_p_baja: {
+        type:'r', status:'warning', title:'Fósforo BAJO – Hipofosfatemia (< 2.5 mg/dL)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Deficiencia de vitamina D',
+          'Hiperparatiroidismo',
+          'Uso excesivo de diuréticos'
+        ]
+      }
+    }
+  },
+
+  /* ===== ELECTROLITOS: CLORUROS ===== */
+  electrolitos_cloruros: {
+    label: 'Electrolitos – Cloruros',
+    section: 'Evaluación de Minerales y Electrolitos',
+    start: 'cl',
+    nodes: {
+      cl: {
+        type:'n', text:'¿Cuál es el valor de cloruros séricos?',
+        ref:'Normal: 95 – 115 mmol/L',
+        unit:'mmol/L', min:50, max:200, step:1, decimals:0,
+        ranges:[
+          {lo:95, hi:115, next:'r_cl_normal'},
+          {lo:-Infinity, hi:95, next:'r_cl_baja'},
+          {lo:115, hi:Infinity, next:'r_cl_alta'}
+        ]
+      },
+      r_cl_normal: {
+        type:'r', status:'normal', title:'Cloruros – Dentro del rango normal',
+        subtitle:'Equilibrio adecuado de electrolitos.',
+        items:['Cloruros: 95–115 mmol/L']
+      },
+      r_cl_alta: {
+        type:'r', status:'danger', title:'Cloruros ELEVADOS – Hipercloremia (> 115 mmol/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Pérdidas excesivas de agua (deshidratación)',
+          'Alteraciones de flujo renal',
+          'Fibrosis quística'
+        ]
+      },
+      r_cl_baja: {
+        type:'r', status:'warning', title:'Cloruros BAJOS – Hipocloremia (< 95 mmol/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Hipocloremia con baja de sodio en sangre',
+          'Vómitos prolongados',
+          'Uso de diuréticos'
+        ]
+      }
+    }
+  },
+
+  /* ===== ELECTROLITOS: MAGNESIO ===== */
+  electrolitos_magnesio: {
+    label: 'Electrolitos – Magnesio',
+    section: 'Evaluación de Minerales y Electrolitos',
+    start: 'mg',
+    nodes: {
+      mg: {
+        type:'n', text:'¿Cuál es el valor de magnesio sérico?',
+        ref:'Normal: 1.5 – 2.6 mg/dL',
+        unit:'mg/dL', min:0, max:15, step:0.1, decimals:1,
+        ranges:[
+          {lo:1.5, hi:2.6, next:'r_mg_normal'},
+          {lo:-Infinity, hi:1.5, next:'r_mg_baja'},
+          {lo:2.6, hi:Infinity, next:'r_mg_alta'}
+        ]
+      },
+      r_mg_normal: {
+        type:'r', status:'normal', title:'Magnesio – Dentro del rango normal',
+        subtitle:'Función renal normal.',
+        items:['Magnesio sérico: 1.5 – 2.6 mg/dL']
+      },
+      r_mg_alta: {
+        type:'r', status:'danger', title:'Magnesio ELEVADO – Hipermagnesemia (> 2.6 mg/dL)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Enfermedad renal',
+          'Deshidratación grave',
+          'Eclampsia',
+          'Tratamiento y emergencias obstétricas'
+        ]
+      },
+      r_mg_baja: {
+        type:'r', status:'warning', title:'Magnesio BAJO – Hipomagnesemia (< 1.5 mg/dL)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Pérdidas gastrointestinales (diarrea y vómitos)',
+          'Trastornos gastrointestinales',
+          'Enfermedades endocrinas',
+          'Pancreatitis',
+          'Alcoholismo'
+        ]
+      }
+    }
+  },
+
+  /* ===== ELECTROLITOS: SODIO ===== */
+  electrolitos_sodio: {
+    label: 'Electrolitos – Sodio',
+    section: 'Evaluación de Minerales y Electrolitos',
+    start: 'na',
+    nodes: {
+      na: {
+        type:'n', text:'¿Cuál es el valor de sodio sérico?',
+        ref:'Normal: 136 – 145 mmol/L',
+        unit:'mmol/L', min:80, max:200, step:1, decimals:0,
+        ranges:[
+          {lo:136, hi:145, next:'r_na_normal'},
+          {lo:-Infinity, hi:136, next:'r_na_baja'},
+          {lo:145, hi:Infinity, next:'r_na_alta'}
+        ]
+      },
+      r_na_normal: {
+        type:'r', status:'normal', title:'Sodio – Dentro del rango normal',
+        subtitle:'Función renal normal.',
+        items:['Sodio sérico: 136 – 145 mmol/L']
+      },
+      r_na_alta: {
+        type:'r', status:'danger', title:'Sodio ELEVADO – Hipernatremia (> 145 mmol/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Deshidratación',
+          'Síndrome de Cushing',
+          'Diabetes insípida'
+        ]
+      },
+      r_na_baja: {
+        type:'r', status:'warning', title:'Sodio BAJO – Hiponatremia (< 136 mmol/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Pérdidas gastrointestinales (diarrea y vómitos)',
+          'Enfermedad de Addison',
+          'Enfermedad renal'
+        ]
+      }
+    }
+  },
+
+  /* ===== ELECTROLITOS: POTASIO ===== */
+  electrolitos_potasio: {
+    label: 'Electrolitos – Potasio',
+    section: 'Evaluación de Minerales y Electrolitos',
+    start: 'k',
+    nodes: {
+      k: {
+        type:'n', text:'¿Cuál es el valor de potasio sérico?',
+        ref:'Normal: 3.5 – 5.1 mmol/L',
+        unit:'mmol/L', min:1, max:15, step:0.1, decimals:1,
+        ranges:[
+          {lo:3.5, hi:5.1, next:'r_k_normal'},
+          {lo:-Infinity, hi:3.5, next:'r_k_baja'},
+          {lo:5.1, hi:Infinity, next:'r_k_alta'}
+        ]
+      },
+      r_k_normal: {
+        type:'r', status:'normal', title:'Potasio – Dentro del rango normal',
+        subtitle:'Función renal normal.',
+        items:['Potasio sérico: 3.5 – 5.1 mmol/L']
+      },
+      r_k_alta: {
+        type:'r', status:'danger', title:'Potasio ELEVADO – Hiperpotasemia (> 5.1 mmol/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Shock',
+          'Insuficiencia circulatoria',
+          'Enfermedad renal'
+        ]
+      },
+      r_k_baja: {
+        type:'r', status:'warning', title:'Potasio BAJO – Hipopotasemia (< 3.5 mmol/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Pérdidas gastrointestinales (diarrea y vómitos)',
+          'Uso de diuréticos',
+          'Algunos cánceres'
+        ]
+      }
+    }
+  },
+
+  /* ===== ENZIMAS: ALT/GPT ===== */
+  enzimas_alt: {
+    label: 'Enzimas – ALT / GPT',
+    section: 'Determinación de Enzimas – Perfil Hepático',
+    start: 'alt_sexo',
+    nodes: {
+      alt_sexo: {
+        type:'q', text:'¿Cuál es el sexo biológico del paciente?',
+        ref:'Los rangos de referencia difieren entre hombres y mujeres',
+        answers:[
+          {label:'Hombre', icon:'♂', next:'alt_h'},
+          {label:'Mujer', icon:'♀', next:'alt_m'}
+        ]
+      },
+      alt_h: {
+        type:'n', text:'¿Cuál es el valor de ALT (GPT)?',
+        ref:'Hombres: 13 – 40 U/L',
+        unit:'U/L', min:0, max:2000, step:1, decimals:0,
+        ranges:[
+          {lo:13, hi:40, next:'r_alt_normal'},
+          {lo:-Infinity, hi:13, next:'r_alt_baja'},
+          {lo:40, hi:Infinity, next:'r_alt_alta'}
+        ]
+      },
+      alt_m: {
+        type:'n', text:'¿Cuál es el valor de ALT (GPT)?',
+        ref:'Mujeres: 10 – 28 U/L',
+        unit:'U/L', min:0, max:2000, step:1, decimals:0,
+        ranges:[
+          {lo:10, hi:28, next:'r_alt_normal'},
+          {lo:-Infinity, hi:10, next:'r_alt_baja'},
+          {lo:28, hi:Infinity, next:'r_alt_alta'}
+        ]
+      },
+      r_alt_normal: {
+        type:'r', status:'normal', title:'ALT/GPT – Dentro del rango normal',
+        subtitle:'Función hepática normal. Ausencia de daño hepatocelular.',
+        items:[
+          'Hombres: 13–40 U/L',
+          'Mujeres: 10–28 U/L'
+        ]
+      },
+      r_alt_alta: {
+        type:'r', status:'danger', title:'ALT/GPT ELEVADA',
+        subtitle:'Sospecha de daño hepatocelular:',
+        items:[
+          'Daño a células hepáticas (necrosis hepatocelular)',
+          'Cirrosis',
+          'Ingesta excesiva de alcohol',
+          'Administración de drogas hepatotóxicas',
+          'Distrofia muscular',
+          'Enfermedad hemolítica',
+          'Infarto de miocardio'
+        ]
+      },
+      r_alt_baja: {
+        type:'r', status:'warning', title:'ALT/GPT BAJA',
+        subtitle:'Sospecha de:',
+        items:[
+          'Deficiencia de vitamina B6'
+        ]
+      }
+    }
+  },
+
+  /* ===== ENZIMAS: AST/GOT ===== */
+  enzimas_ast: {
+    label: 'Enzimas – AST / GOT',
+    section: 'Determinación de Enzimas – Perfil Hepático',
+    start: 'ast',
+    nodes: {
+      ast: {
+        type:'n', text:'¿Cuál es el valor de AST (GOT)?',
+        ref:'Normal suero/plasma: 8 – 48 U/L',
+        unit:'U/L', min:0, max:2000, step:1, decimals:0,
+        ranges:[
+          {lo:8, hi:48, next:'r_ast_normal'},
+          {lo:-Infinity, hi:8, next:'r_ast_baja'},
+          {lo:48, hi:Infinity, next:'r_ast_alta'}
+        ]
+      },
+      r_ast_normal: {
+        type:'r', status:'normal', title:'AST/GOT – Dentro del rango normal',
+        subtitle:'Función hepática normal.',
+        items:['Suero/plasma: 8 – 48 U/L']
+      },
+      r_ast_alta: {
+        type:'r', status:'danger', title:'AST/GOT ELEVADA (> 48 U/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Hepatitis aguda',
+          'Infarto de miocardio',
+          'Hepatitis crónica',
+          'Consumo de alcohol y administración de fármacos hepatotóxicos',
+          'Distrofia muscular',
+          'Pancreatitis aguda'
+        ]
+      },
+      r_ast_baja: {
+        type:'r', status:'warning', title:'AST/GOT BAJA (< 8 U/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Deficiencia de vitamina B6',
+          'Enfermedad renal crónica',
+          'Insuficiencia hepática aguda'
+        ]
+      }
+    }
+  },
+
+  /* ===== ENZIMAS: ALP ===== */
+  enzimas_alp: {
+    label: 'Enzimas – ALP (Fosfatasa Alcalina)',
+    section: 'Determinación de Enzimas – Perfil Hepático',
+    start: 'alp',
+    nodes: {
+      alp: {
+        type:'n', text:'¿Cuál es el valor de ALP (Fosfatasa Alcalina)?',
+        ref:'Normal: 20 – 130 U/L',
+        unit:'U/L', min:0, max:1500, step:1, decimals:0,
+        ranges:[
+          {lo:20, hi:130, next:'r_alp_normal'},
+          {lo:-Infinity, hi:20, next:'r_alp_baja'},
+          {lo:130, hi:Infinity, next:'r_alp_alta'}
+        ]
+      },
+      r_alp_normal: {
+        type:'r', status:'normal', title:'ALP – Dentro del rango normal',
+        subtitle:'Función hepática y ósea sin alteración significativa.',
+        items:['ALP: 20 – 130 U/L']
+      },
+      r_alp_alta: {
+        type:'r', status:'danger', title:'ALP ELEVADA (> 130 U/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Enfermedad hepática',
+          'Enfermedad ósea',
+          'Períodos de crecimiento óseo (fisiológico en niños/adolescentes)'
+        ]
+      },
+      r_alp_baja: {
+        type:'r', status:'warning', title:'ALP BAJA (< 20 U/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Deficiencias nutricionales (malnutrición)',
+          'Hipotiroidismo',
+          'Bajo fosfato sérico',
+          'Anemia perniciosa'
+        ]
+      }
+    }
+  },
+
+  /* ===== ENZIMAS: GAMMA-GT ===== */
+  enzimas_ggt: {
+    label: 'Enzimas – Gamma-GT',
+    section: 'Determinación de Enzimas – Perfil Hepático',
+    start: 'ggt',
+    nodes: {
+      ggt: {
+        type:'n', text:'¿Cuál es el valor de Gamma-GT?',
+        ref:'Normal suero/plasma: 8 – 61 U/L',
+        unit:'U/L', min:0, max:1000, step:1, decimals:0,
+        ranges:[
+          {lo:8, hi:61, next:'r_ggt_normal'},
+          {lo:-Infinity, hi:8, next:'r_ggt_baja'},
+          {lo:61, hi:Infinity, next:'r_ggt_alta'}
+        ]
+      },
+      r_ggt_normal: {
+        type:'r', status:'normal', title:'Gamma-GT – Dentro del rango normal',
+        subtitle:'Función hepática y renal normal.',
+        items:['Gamma-GT: 8 – 61 U/L']
+      },
+      r_ggt_alta: {
+        type:'r', status:'danger', title:'Gamma-GT ELEVADA (> 61 U/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Obstrucciones biliares intrahepáticas y poshepáticas',
+          'Enfermedad hepática alcohólica'
+        ]
+      },
+      r_ggt_baja: {
+        type:'r', status:'warning', title:'Gamma-GT BAJA (< 8 U/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Deficiencias nutricionales (vitamina B6 / magnesio)',
+          'Hipotiroidismo'
+        ]
+      }
+    }
+  },
+
+  /* ===== ENZIMAS: LDH ===== */
+  enzimas_ldh: {
+    label: 'Enzimas – LDH',
+    section: 'Determinación de Enzimas – Daño Celular y Muscular',
+    start: 'ldh',
+    nodes: {
+      ldh: {
+        type:'n', text:'¿Cuál es el valor de LDH (Lactato Deshidrogenasa)?',
+        ref:'Normal adultos: 140 – 280 U/L',
+        unit:'U/L', min:0, max:3000, step:1, decimals:0,
+        ranges:[
+          {lo:140, hi:280, next:'r_ldh_normal'},
+          {lo:-Infinity, hi:140, next:'r_ldh_baja'},
+          {lo:280, hi:Infinity, next:'r_ldh_alta'}
+        ]
+      },
+      r_ldh_normal: {
+        type:'r', status:'normal', title:'LDH – Dentro del rango normal',
+        subtitle:'Función hepática normal.',
+        items:['LDH adultos: 140 – 280 U/L']
+      },
+      r_ldh_alta: {
+        type:'r', status:'danger', title:'LDH ELEVADA (> 280 U/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Ataque cardíaco',
+          'Enfermedad hepática',
+          'Enfermedad pulmonar',
+          'Tumores'
+        ]
+      },
+      r_ldh_baja: {
+        type:'r', status:'warning', title:'LDH BAJA (< 140 U/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Deficiencias nutricionales (vitamina B6 / magnesio)',
+          'Hipotiroidismo'
+        ]
+      }
+    }
+  },
+
+  /* ===== ENZIMAS: CK TOTAL ===== */
+  enzimas_ck: {
+    label: 'Enzimas – CK (Creatina Quinasa Total)',
+    section: 'Determinación de Enzimas – Daño Celular y Muscular',
+    start: 'ck_sexo',
+    nodes: {
+      ck_sexo: {
+        type:'q', text:'¿Cuál es el sexo biológico del paciente?',
+        ref:'Los rangos de referencia difieren entre hombres y mujeres',
+        answers:[
+          {label:'Hombre', icon:'♂', next:'ck_h'},
+          {label:'Mujer', icon:'♀', next:'ck_m'}
+        ]
+      },
+      ck_h: {
+        type:'n', text:'¿Cuál es el valor de CK (Creatina Quinasa Total)?',
+        ref:'Hombres: 13 – 40 U/L',
+        unit:'U/L', min:0, max:5000, step:1, decimals:0,
+        ranges:[
+          {lo:13, hi:40, next:'r_ck_normal'},
+          {lo:-Infinity, hi:13, next:'r_ck_baja'},
+          {lo:40, hi:Infinity, next:'r_ck_alta'}
+        ]
+      },
+      ck_m: {
+        type:'n', text:'¿Cuál es el valor de CK (Creatina Quinasa Total)?',
+        ref:'Mujeres: 10 – 28 U/L',
+        unit:'U/L', min:0, max:5000, step:1, decimals:0,
+        ranges:[
+          {lo:10, hi:28, next:'r_ck_normal'},
+          {lo:-Infinity, hi:10, next:'r_ck_baja'},
+          {lo:28, hi:Infinity, next:'r_ck_alta'}
+        ]
+      },
+      r_ck_normal: {
+        type:'r', status:'normal', title:'CK Total – Dentro del rango normal',
+        subtitle:'Función muscular y cardíaca normal. Ausencia de daño hepatocelular.',
+        items:[
+          'Hombres: 13–40 U/L',
+          'Mujeres: 10–28 U/L'
+        ]
+      },
+      r_ck_alta: {
+        type:'r', status:'danger', title:'CK Total ELEVADA (> 40 U/L o > 28 U/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Daño a las células hepáticas (necrosis de las células hepáticas o daño de cualquier índole en dichas células)',
+          'Cirrosis',
+          'Ingesta de alcohol',
+          'Administración de drogas',
+          'Distrofia muscular',
+          'Enfermedad hemolítica',
+          'Infarto de miocardio'
+        ]
+      },
+      r_ck_baja: {
+        type:'r', status:'warning', title:'CK Total BAJA (< 13 U/L o < 10 U/L)',
+        subtitle:'Sospecha de:',
+        items:[
+          'Deficiencia en la vitamina B6'
+        ]
+      }
+    }
+  },
+
+  /* ===== PROTEÍNAS: ALBÚMINA ===== */
+  proteinas_albumina: {
+    label: 'Proteínas – Albúmina (ALB)',
+    section: 'Evaluación de Proteínas',
+    start: 'alb_edad',
+    nodes: {
+      alb_edad: {
+        type:'q', text:'¿Cuál es el grupo de edad del paciente (adulto en reposo)?',
+        ref:'Suero y plasma en humanos – Adultos en reposo',
+        answers:[
+          {label:'< 60 años', icon:'🧑', next:'alb_60'},
+          {label:'60 – 90 años', icon:'👴', next:'alb_6090'},
+          {label:'> 90 años', icon:'🧓', next:'alb_90'}
+        ]
+      },
+      alb_60: {
+        type:'n', text:'¿Cuál es el valor de albúmina sérica/plasmática?',
+        ref:'Adultos en reposo < 60 años: 3.5 – 5.2 g/dL',
+        unit:'g/dL', min:0, max:10, step:0.1, decimals:1,
+        ranges:[
+          {lo:3.5, hi:5.2, next:'r_alb_normal'},
+          {lo:-Infinity, hi:3.5, next:'r_alb_baja'},
+          {lo:5.2, hi:Infinity, next:'r_alb_alta'}
+        ]
+      },
+      alb_6090: {
+        type:'n', text:'¿Cuál es el valor de albúmina sérica/plasmática?',
+        ref:'Adultos en reposo 60–90 años: 3.2 – 4.6 g/dL',
+        unit:'g/dL', min:0, max:10, step:0.1, decimals:1,
+        ranges:[
+          {lo:3.2, hi:4.6, next:'r_alb_normal'},
+          {lo:-Infinity, hi:3.2, next:'r_alb_baja'},
+          {lo:4.6, hi:Infinity, next:'r_alb_alta'}
+        ]
+      },
+      alb_90: {
+        type:'n', text:'¿Cuál es el valor de albúmina sérica/plasmática?',
+        ref:'Adultos en reposo > 90 años: 2.9 – 4.5 g/dL',
+        unit:'g/dL', min:0, max:10, step:0.1, decimals:1,
+        ranges:[
+          {lo:2.9, hi:4.5, next:'r_alb_normal'},
+          {lo:-Infinity, hi:2.9, next:'r_alb_baja'},
+          {lo:4.5, hi:Infinity, next:'r_alb_alta'}
+        ]
+      },
+      r_alb_normal: {
+        type:'r', status:'normal', title:'Albúmina – Dentro del rango normal',
+        subtitle:'Función hepática y renal normal.',
+        items:[
+          'Adultos en reposo < 60 años: 3.5–5.2 g/dL',
+          'Adultos en reposo 60–90 años: 3.2–4.6 g/dL',
+          'Adultos en reposo > 90 años: 2.9–4.5 g/dL'
+        ]
+      },
+      r_alb_alta: {
+        type:'r', status:'warning', title:'Albúmina ELEVADA',
+        subtitle:'Sospecha de:',
+        items:[
+          'Deshidratación'
+        ]
+      },
+      r_alb_baja: {
+        type:'r', status:'danger', title:'Albúmina BAJA',
+        subtitle:'Sospecha de:',
+        items:[
+          'Posible cirrosis',
+          'Insuficiencia renal',
+          'Hepatitis crónica',
+          'Desnutrición proteica',
+          'Sobrehidratación',
+          'Función renal anormal',
+          'Quemadura',
+          'Hígado graso'
+        ]
+      }
+    }
+  },
+
+  /* ===== PROTEÍNAS TOTALES ===== */
+  proteinas_totales: {
+    label: 'Proteínas Totales',
+    section: 'Evaluación de Proteínas',
+    start: 'pt_muestra',
+    nodes: {
+      pt_muestra: {
+        type:'q', text:'¿Qué tipo de muestra se utilizó para la determinación?',
+        ref:'Los rangos de referencia varían según el tipo de muestra',
+        answers:[
+          {label:'Suero', icon:'🧫', next:'pt_suero_tipo'},
+          {label:'Plasma', icon:'🩸', next:'pt_plasma_unidad'}
+        ]
+      },
+      pt_suero_tipo: {
+        type:'q', text:'¿El paciente es ambulatorio o se encuentra en reposo/hospitalizado?',
+        ref:'Los rangos difieren entre pacientes ambulatorios y en reposo',
+        answers:[
+          {label:'Paciente ambulatorio', icon:'🚶', next:'pt_suero_amb_unidad'},
+          {label:'Paciente en reposo', icon:'🛏️', next:'pt_suero_rep_unidad'}
+        ]
+      },
+      pt_suero_amb_unidad: {
+        type:'q', text:'¿En qué unidad desea ingresar el valor?',
+        ref:'Pacientes ambulatorios – suero: 6.4–8.3 g/dL o 64–83 g/L',
+        answers:[
+          {label:'g/dL', icon:'🧪', next:'pt_suero_amb_gdl'},
+          {label:'g/L', icon:'⚗️', next:'pt_suero_amb_gl'}
+        ]
+      },
+      pt_suero_amb_gdl: {
+        type:'n', text:'¿Cuál es el valor de proteínas totales en suero?',
+        ref:'Pacientes ambulatorios: 6.4 – 8.3 g/dL',
+        unit:'g/dL', min:0, max:20, step:0.1, decimals:1,
+        ranges:[
+          {lo:6.4, hi:8.3, next:'r_pt_normal'},
+          {lo:-Infinity, hi:6.4, next:'r_pt_baja'},
+          {lo:8.3, hi:Infinity, next:'r_pt_alta'}
+        ]
+      },
+      pt_suero_amb_gl: {
+        type:'n', text:'¿Cuál es el valor de proteínas totales en suero?',
+        ref:'Pacientes ambulatorios: 64 – 83 g/L',
+        unit:'g/L', min:0, max:200, step:1, decimals:0,
+        ranges:[
+          {lo:64, hi:83, next:'r_pt_normal'},
+          {lo:-Infinity, hi:64, next:'r_pt_baja'},
+          {lo:83, hi:Infinity, next:'r_pt_alta'}
+        ]
+      },
+      pt_suero_rep_unidad: {
+        type:'q', text:'¿En qué unidad desea ingresar el valor?',
+        ref:'Pacientes en reposo – suero: 6.0–7.8 g/dL o 60–78 g/L',
+        answers:[
+          {label:'g/dL', icon:'🧪', next:'pt_suero_rep_gdl'},
+          {label:'g/L', icon:'⚗️', next:'pt_suero_rep_gl'}
+        ]
+      },
+      pt_suero_rep_gdl: {
+        type:'n', text:'¿Cuál es el valor de proteínas totales en suero?',
+        ref:'Pacientes en reposo: 6.0 – 7.8 g/dL',
+        unit:'g/dL', min:0, max:20, step:0.1, decimals:1,
+        ranges:[
+          {lo:6.0, hi:7.8, next:'r_pt_normal'},
+          {lo:-Infinity, hi:6.0, next:'r_pt_baja'},
+          {lo:7.8, hi:Infinity, next:'r_pt_alta'}
+        ]
+      },
+      pt_suero_rep_gl: {
+        type:'n', text:'¿Cuál es el valor de proteínas totales en suero?',
+        ref:'Pacientes en reposo: 60 – 78 g/L',
+        unit:'g/L', min:0, max:200, step:1, decimals:0,
+        ranges:[
+          {lo:60, hi:78, next:'r_pt_normal'},
+          {lo:-Infinity, hi:60, next:'r_pt_baja'},
+          {lo:78, hi:Infinity, next:'r_pt_alta'}
+        ]
+      },
+      pt_plasma_unidad: {
+        type:'n', text:'¿Cuál es el valor de proteínas totales en plasma?',
+        ref:'Plasma: 2 – 4 g/dL',
+        unit:'g/dL', min:0, max:20, step:0.1, decimals:1,
+        ranges:[
+          {lo:2.0, hi:4.0, next:'r_pt_normal'},
+          {lo:-Infinity, hi:2.0, next:'r_pt_baja'},
+          {lo:4.0, hi:Infinity, next:'r_pt_alta'}
+        ]
+      },
+      pt_plasma_gdl: {
+        type:'n', text:'¿Cuál es el valor de proteínas totales en plasma?',
+        ref:'Plasma: 2 – 4 g/dL',
+        unit:'g/dL', min:0, max:20, step:0.1, decimals:1,
+        ranges:[
+          {lo:2.0, hi:4.0, next:'r_pt_normal'},
+          {lo:-Infinity, hi:2.0, next:'r_pt_baja'},
+          {lo:4.0, hi:Infinity, next:'r_pt_alta'}
+        ]
+      },
+      r_pt_normal: {
+        type:'r', status:'normal', title:'Proteínas Totales – Dentro del rango normal',
+        subtitle:'Función hepática y producción de inmunoglobulinas normal.',
+        items:[
+          'Suero – Pacientes ambulatorios: 6.4–8.3 g/dL (64–83 g/L)',
+          'Suero – Pacientes en reposo: 6.0–7.8 g/dL (60–78 g/L)',
+          'Plasma: 2–4 g/dL'
+        ]
+      },
+      r_pt_alta: {
+        type:'r', status:'warning', title:'Proteínas Totales ELEVADAS',
+        subtitle:'Sospecha de:',
+        items:[
+          'Síndrome de retención de sal e intoxicación con agua (valores altos en plasma)',
+          'Hiperinmunoglobulinemia (mieloma múltiple, infección)'
+        ]
+      },
+      r_pt_baja: {
+        type:'r', status:'danger', title:'Proteínas Totales BAJAS',
+        subtitle:'Sospecha de:',
+        items:[
+          'Deshidratación'
+        ],
+        note:'Evaluar en conjunto con albúmina y globulinas para determinar la fracción afectada.'
+      }
+    }
+  }
+
+};
+
+/* ============================================================
+   MODULE METADATA
+   ============================================================ */
+const MODULES = {
+  ego: {
+    label: 'EGO', icon: '🔬',
+    desc: 'Examen General de Orina: evaluación física, química y microscópica de la muestra urinaria.',
+    trees: ['ego_exFisico','ego_exQuimico','ego_sedimento']
+  },
+  renal: {
+    label: 'Función Renal', icon: '🫀',
+    desc: 'Evaluación de urea, creatinina y ácido úrico para detectar alteraciones en la filtración glomerular.',
+    trees: ['renal_urea','renal_creatinina','renal_acidourico']
+  },
+  lipidico: {
+    label: 'Perfil Lipídico', icon: '🧪',
+    desc: 'Determinación de glucosa, colesterol total y triglicéridos para identificar trastornos metabólicos.',
+    trees: ['lipidico_glucosa','lipidico_colesterol','lipidico_trigliceridos']
+  },
+  electrolitos: {
+    label: 'Electrolitos', icon: '⚡',
+    desc: 'Evaluación de minerales y electrolitos: calcio, fósforo, cloruros, magnesio, sodio y potasio.',
+    trees: ['electrolitos_calcio','electrolitos_fosforo','electrolitos_cloruros','electrolitos_magnesio','electrolitos_sodio','electrolitos_potasio']
+  },
+  enzimas: {
+    label: 'Enzimas', icon: '🧬',
+    desc: 'Determinación de ALT, AST, ALP, Gamma-GT, LDH y CK para diagnóstico de daño hepático, cardíaco y muscular.',
+    trees: ['enzimas_alt','enzimas_ast','enzimas_alp','enzimas_ggt','enzimas_ldh','enzimas_ck']
+  },
+  proteinas: {
+    label: 'Evaluación de Proteínas', icon: '🥩',
+    desc: 'Determinación de albúmina y proteínas totales para la evaluación del estado nutricional y función hepática.',
+    trees: ['proteinas_albumina','proteinas_totales']
+  }
+};
+
+/* ============================================================
+   APP STATE
+   ============================================================ */
+let currentTree = null;
+let currentNodeId = null;
+let history = [];   // stack of node IDs
+let breadcrumbs = [];
+
+/* ============================================================
+   LANDING → APP
+   ============================================================ */
+function startApp() {
+  document.getElementById('landing').classList.add('exit');
+  setTimeout(() => {
+    document.getElementById('landing').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    showHome();
+  }, 700);
+}
+
+/* ============================================================
+   NAVIGATION HELPERS
+   ============================================================ */
+function setActiveNav(moduleId) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.sub-items').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.sub-item').forEach(el => el.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + moduleId);
+  if (navEl) navEl.classList.add('active');
+  const subEl = document.getElementById('sub-' + moduleId);
+  if (subEl) subEl.classList.add('open');
+}
+
+function setActiveSubItem(treeId) {
+  document.querySelectorAll('.sub-item').forEach(el => el.classList.remove('active'));
+  // match by onclick attr containing treeId
+  document.querySelectorAll('.sub-item').forEach(el => {
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').includes(treeId)) {
+      el.classList.add('active');
+    }
+  });
+}
+
+/* ============================================================
+   HOME SCREEN
+   ============================================================ */
+function showHome() {
+  setActiveNav('home');
+  currentTree = null; currentNodeId = null; history = []; breadcrumbs = [];
+  const mc = document.getElementById('mainContent');
+  mc.innerHTML = `
+    <div class="module-intro">
+      <h2>Árboles de Decisión Clínicos</h2>
+      <p>Selecciona un módulo para comenzar la evaluación interactiva. Cada módulo contiene árboles de decisión basados en los diagramas del laboratorio.</p>
+    </div>
+    <div class="module-grid">
+      ${Object.entries(MODULES).map(([id, m]) => `
+        <div class="module-card" onclick="loadModule('${id}')">
+          <div class="module-card-icon">${m.icon}</div>
+          <div class="module-card-title">${m.label}</div>
+          <div class="module-card-desc">${m.desc}</div>
+          <div class="module-card-count">
+            <span>${m.trees.length}</span> árbol${m.trees.length > 1 ? 'es' : ''} disponible${m.trees.length > 1 ? 's' : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+/* ============================================================
+   MODULE SELECTION SCREEN
+   ============================================================ */
+function loadModule(moduleId) {
+  const m = MODULES[moduleId];
+  if (!m) return;
+  setActiveNav(moduleId);
+  currentTree = null; currentNodeId = null; history = []; breadcrumbs = [];
+
+  const treeCards = m.trees.map(tid => {
+    const t = TREES[tid];
+    if (!t) return '';
+    const nodeCount = Object.keys(t.nodes).length;
+    return `
+      <div class="module-card" onclick="loadTree('${moduleId}','${tid.replace(moduleId+'_','')}')">
+        <div class="module-card-title" style="font-size:1rem">${t.label}</div>
+        <div class="module-card-desc" style="font-size:0.78rem">${t.section}</div>
+        <div class="module-card-count"><span>${nodeCount}</span> nodos</div>
+      </div>
+    `;
+  }).join('');
+
+  const mc = document.getElementById('mainContent');
+  mc.innerHTML = `
+    <div class="module-intro">
+      <h2>${m.icon} ${m.label}</h2>
+      <p>${m.desc}</p>
+    </div>
+    <div class="module-grid">${treeCards}</div>
+    <div class="controls" style="margin-top:2rem">
+      <button class="btn-ctrl" onclick="showHome()">← Inicio</button>
+    </div>
+  `;
+}
+
+/* ============================================================
+   LOAD TREE
+   ============================================================ */
+function loadTree(moduleId, treeSuffix) {
+  const treeId = moduleId + '_' + treeSuffix;
+  const tree = TREES[treeId];
+  if (!tree) { alert('Árbol no encontrado: ' + treeId); return; }
+  setActiveNav(moduleId);
+  setActiveSubItem(treeId);
+  currentTree = tree;
+  history = [];
+  breadcrumbs = [];
+  goToNode(tree.start);
+}
+
+/* ============================================================
+   NODE RENDERER
+   ============================================================ */
+function goToNode(nodeId) {
+  if (!currentTree) return;
+  const node = currentTree.nodes[nodeId];
+  if (!node) return;
+  currentNodeId = nodeId;
+  renderNode(node, nodeId);
+}
+
+function renderNode(node, nodeId) {
+  const mc = document.getElementById('mainContent');
+  const progress = calcProgress();
+  const trailHTML = buildTrail();
+  const moduleId = currentTree === null ? '' : Object.keys(MODULES).find(m =>
+    MODULES[m].trees.includes(Object.keys(TREES).find(k => TREES[k] === currentTree))
+  ) || '';
+
+  if (node.type === 'n') {
+    mc.innerHTML = `
+      <div class="module-intro">
+        <h2>${currentTree.label}</h2>
+        <p>${currentTree.section}</p>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-label">
+          <span>Progreso de evaluación</span>
+          <span>${progress}%</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" style="width:${progress}%"></div>
+        </div>
+      </div>
+      <div class="path-trail">${trailHTML}</div>
+      <div class="question-card">
+        <div class="question-section-tag">${currentTree.section}</div>
+        <div class="question-text">${node.text}</div>
+        ${node.ref ? `<div class="question-ref">📊 ${node.ref}</div>` : ''}
+        <div class="numeric-input-wrap">
+          <input
+            type="text"
+            id="numericInput"
+            class="numeric-input-field"
+            placeholder="0${ node.decimals > 0 ? '.' + '0'.repeat(node.decimals) : '' }"
+            inputmode="decimal"
+            autocomplete="off"
+          />
+          <span class="numeric-unit-label">${node.unit}</span>
+        </div>
+        <div class="numeric-error-msg" id="numericError"></div>
+        <button class="btn-confirm" onclick="confirmNumeric()">
+          <span>Confirmar</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div class="controls">
+        ${history.length > 0 ? `<button class="btn-ctrl" onclick="goBack()">← Volver</button>` : ''}
+        <button class="btn-ctrl" onclick="restartTree()">↺ Reiniciar árbol</button>
+        <button class="btn-ctrl" onclick="backToModule()">⊞ Módulo</button>
+        <button class="btn-ctrl" onclick="showHome()">🏠 Inicio</button>
+      </div>
+    `;
+    // Allow only digits, one dot/comma, minus only at start
+    const inp = document.getElementById('numericInput');
+    inp.addEventListener('input', function() {
+      // replace comma with dot
+      let v = this.value.replace(',', '.');
+      // strip anything that isn't digit, dot or leading minus
+      v = v.replace(/[^0-9.\-]/g, '');
+      // allow only one dot
+      const parts = v.split('.');
+      if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+      // allow minus only at start
+      if (v.indexOf('-') > 0) v = v.replace(/-/g, '');
+      if (this.value !== v) this.value = v;
+      document.getElementById('numericError').textContent = '';
+      this.classList.remove('error');
+    });
+    inp.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') confirmNumeric();
+    });
+    inp.focus();
+  } else if (node.type === 'q') {
+    const isMulti = node.answers.length > 2;
+    mc.innerHTML = `
+      <div class="module-intro">
+        <h2>${currentTree.label}</h2>
+        <p>${currentTree.section}</p>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-label">
+          <span>Progreso de evaluación</span>
+          <span>${progress}%</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" style="width:${progress}%"></div>
+        </div>
+      </div>
+      <div class="path-trail">${trailHTML}</div>
+      <div class="question-card">
+        <div class="question-section-tag">${currentTree.section}</div>
+        <div class="question-text">${node.text}</div>
+        ${node.ref ? `<div class="question-ref">📊 ${node.ref}</div>` : ''}
+        <div class="answer-grid ${isMulti ? 'multi' : ''}">
+          ${node.answers.map((a, i) => `
+            <button class="btn-answer ${i===0&&node.answers.length===2?'yes':''} ${i===1&&node.answers.length===2?'no':''}"
+              onclick="answer('${a.next}','${escHtml(a.label)}')">
+              <span class="btn-indicator">${a.icon}</span>
+              ${a.label}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+      <div class="controls">
+        ${history.length > 0 ? `<button class="btn-ctrl" onclick="goBack()">← Volver</button>` : ''}
+        <button class="btn-ctrl" onclick="restartTree()">↺ Reiniciar árbol</button>
+        <button class="btn-ctrl" onclick="backToModule()">⊞ Módulo</button>
+        <button class="btn-ctrl" onclick="showHome()">🏠 Inicio</button>
+      </div>
+    `;
+  } else if (node.type === 'r') {
+    mc.innerHTML = `
+      <div class="module-intro">
+        <h2>${currentTree.label}</h2>
+        <p>${currentTree.section}</p>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-label"><span>Evaluación completada</span><span>100%</span></div>
+        <div class="progress-bar-track"><div class="progress-bar-fill" style="width:100%"></div></div>
+      </div>
+      <div class="path-trail">${trailHTML}</div>
+      <div class="result-card ${node.status}">
+        <div class="result-icon">${node.status==='normal'?'✅':node.status==='warning'?'⚠️':'🔴'}</div>
+        <div class="result-title">${node.title}</div>
+        <div class="result-subtitle">${node.subtitle || ''}</div>
+        ${node.items && node.items.length ? `
+          <ul class="result-list">
+            ${node.items.map(i => `<li>${i}</li>`).join('')}
+          </ul>
+        ` : ''}
+        ${node.note ? `<div class="result-note">💡 ${node.note}</div>` : ''}
+        <div style="margin-top:0.6rem; font-size:0.72rem; color:var(--text-dim); font-style:italic;">
+          ⚠ Este resultado es de carácter académico. No sustituye el juicio clínico profesional.
+        </div>
+      </div>
+      <div class="controls">
+        ${history.length > 0 ? `<button class="btn-ctrl" onclick="goBack()">← Volver</button>` : ''}
+        <button class="btn-ctrl primary" onclick="restartTree()">↺ Reiniciar árbol</button>
+        <button class="btn-ctrl" onclick="backToModule()">⊞ Módulo</button>
+        <button class="btn-ctrl" onclick="showHome()">🏠 Inicio</button>
+      </div>
+    `;
+  }
+}
+
+function answer(nextNodeId, label) {
+  history.push(currentNodeId);
+  breadcrumbs.push(label.length > 30 ? label.slice(0,27)+'…' : label);
+  goToNode(nextNodeId);
+}
+
+function confirmNumeric() {
+  if (!currentTree || !currentNodeId) return;
+  const node = currentTree.nodes[currentNodeId];
+  if (!node || node.type !== 'n') return;
+  const inp = document.getElementById('numericInput');
+  const errEl = document.getElementById('numericError');
+  if (!inp) return;
+
+  const raw = inp.value.replace(',', '.').trim();
+  if (raw === '' || raw === '-' || raw === '.') {
+    errEl.textContent = 'Por favor ingresa un valor numérico válido.';
+    inp.classList.add('error');
+    inp.focus();
+    return;
+  }
+  const val = parseFloat(raw);
+  if (isNaN(val)) {
+    errEl.textContent = 'El valor ingresado no es un número válido.';
+    inp.classList.add('error');
+    inp.focus();
+    return;
+  }
+
+  // Find matching range — normal range is INCLUSIVE on both ends (lo <= val <= hi)
+  // For open-ended ranges (-Infinity or Infinity), strict comparison applies
+  let matched = null;
+  for (const r of node.ranges) {
+    const lo = (r.lo === undefined || r.lo === null) ? -Infinity : r.lo;
+    const hi = (r.hi === undefined || r.hi === null) ? Infinity : r.hi;
+    const loOk = (lo === -Infinity) ? val < hi : val >= lo;
+    const hiOk = (hi === Infinity)  ? val > lo : val <= hi;
+    if (loOk && hiOk) { matched = r; break; }
+  }
+  // Fallback: last range
+  if (!matched) matched = node.ranges[node.ranges.length - 1];
+
+  const decimals = node.decimals !== undefined ? node.decimals : 2;
+  const label = `${val.toFixed(decimals)} ${node.unit}`;
+  answer(matched.next, label);
+}
+
+function goBack() {
+  if (history.length === 0) return;
+  breadcrumbs.pop();
+  const prev = history.pop();
+  currentNodeId = prev;
+  renderNode(currentTree.nodes[prev], prev);
+}
+
+function restartTree() {
+  history = []; breadcrumbs = [];
+  goToNode(currentTree.start);
+}
+
+function backToModule() {
+  const treeId = Object.keys(TREES).find(k => TREES[k] === currentTree);
+  if (!treeId) { showHome(); return; }
+  const moduleId = Object.keys(MODULES).find(m => MODULES[m].trees.includes(treeId));
+  if (moduleId) loadModule(moduleId);
+  else showHome();
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function calcProgress() {
+  if (!currentTree) return 0;
+  const total = Object.values(currentTree.nodes).filter(n => n.type === 'q' || n.type === 'n').length;
+  if (total === 0) return 100;
+  return Math.round((history.length / (total + 1)) * 100);
+}
+
+function buildTrail() {
+  if (breadcrumbs.length === 0) return '<span style="color:var(--text-dim);font-size:0.75rem">Inicio del árbol</span>';
+  return breadcrumbs.map((b,i) => `
+    ${i > 0 ? '<span class="path-arrow">›</span>' : ''}
+    <span class="path-crumb">${b}</span>
+  `).join('');
+}
+
+function escHtml(str) {
+  return str.replace(/'/g,"&#39;").replace(/"/g,'&quot;');
+}
+
+/* ============================================================
+   INJECT LOGO (base64) after page loads
+   ============================================================ */
+window.addEventListener('DOMContentLoaded', () => {
+  // Logo is embedded directly via DATA_URI placeholder below
+});
+</script>
+
+<script>
+// Embed logo as base64 data URI
+(function() {
+  const LOGO_DATA = '/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAQABgADASIAAhEBAxEB/8QAHAABAAEFAQEAAAAAAAAAAAAAAAYCAwQFBwgB/8QAXBABAAEDAgIFBggICgcGBQIHAAECAwQFEQYhBxIxQVETYXGBkbEUIjJSocHR8AgVIzVCU3KSFjRDVGJzdIKy4SQzNjeiwvEXRGOTlNIlJ2R1s0ZVhMMmRVaDo//EABwBAQACAwEBAQAAAAAAAAAAAAAFBgECBAMHCP/EAEARAQABAwIDAwkHBAEEAgIDAAABAgMEBRESITFBUXEGEyIyM2GBkbEUFTRSodHwI0LB4WIHQ3LxJII1olOSwv/aAAwDAQACEQMRAD8A8ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA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AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/9k=';
+  const src = 'data:image/png;base64,' + LOGO_DATA;
+  ['headerLogoLanding','headerLogoApp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.src = src;
+  });
+  const bg = document.getElementById('landingBg');
+  if (bg) bg.style.backgroundImage = "url('" + src + "')";
+})();
+</script>
+</body>
+</html>
